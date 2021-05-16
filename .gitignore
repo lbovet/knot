@@ -104,3 +104,4 @@ tmp/
 
 *.key
 credentials.json
+.vscode/
