@@ -3,6 +3,8 @@ import gkeepapi
 import json
 from cryptography.fernet import Fernet
 from flask import Flask, Response, request, jsonify
+from feedgen.feed import FeedGenerator
+from hashlib import sha256
 import os
 
 app = Flask(__name__)
@@ -50,20 +52,51 @@ def sync(key):
             try:
                 keep.resume(user, Fernet(key).decrypt(master_token).decode())
             except:
-                os.remove("master.key")
+                try:
+                    os.remove("master.key")
+                except:
+                    pass
                 return
         logged_in = True
 
 
 @app.route("/pinned/notes")
-def status():
-    sync(request.args.get('key'))
-    notes = []
-    for note in keep.find(pinned=True):
-        if note.title and note.title != "":
-            notes.append(note.title)
-        else:
-            notes.append(note.text.split('\n')[0])
+def getPinnedNotes():
     result = {}
-    result['notes'] = notes
+    result['notes'] = list(map(format, getNotes()))
     return jsonify(result)
+
+
+@app.route("/pinned/notes.rss")
+def getPinnedNotesRss():
+    return getFeed(request.url).rss_str(pretty=True)
+
+
+@app.route("/pinned/notes.atom")
+def getPinnedNotesAtom():
+    return getFeed(request.url).atom_str(pretty=True)
+
+
+def getFeed(url):
+    fg = FeedGenerator()
+    fg.id(url)
+    fg.link(href=url, rel='self')
+    fg.link(href='https://keep.google.com/u/0/?pli=1#home', rel='alternate')
+    fg.title('Notes')
+    fg.description('Do not forget')
+    for note in getNotes():
+        fe = fg.add_entry()
+        fe.id(url+'#'+note.id)
+        fe.link(href='https://keep.google.com/u/0/?pli=1#home', rel='alternate')
+        fe.title(format(note))
+    return fg
+
+def getNotes():
+    sync(request.args.get('key'))
+    return keep.find(pinned=True)
+
+def format(note):
+    if note.title and note.title != "":
+        return note.title
+    else:
+        return note.text.split('\n')[0]
