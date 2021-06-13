@@ -86,8 +86,8 @@ def getFeed(url):
     fg.description('Do not forget')
     for note in getNotes():
         fe = fg.add_entry()
-        fe.id(url+'#'+note.id)
-        fe.link(href='https://keep.google.com/u/0/?pli=1#home', rel='alternate')
+        fe.id("https://keep.google.com/u/0/#NOTE/"+note.id)
+        fe.link(href='https://keep.google.com/u/0/#NOTE/'+note.id, rel='alternate')
         fe.title(format(note))
     return fg
 
