@@ -69,15 +69,17 @@ def getPinnedNotes():
 
 @app.route("/pinned/notes.rss")
 def getPinnedNotesRss():
-    return getFeed(request.url).rss_str(pretty=True)
+    return getFeed(request.url, placeholderRequested(request)).rss_str(pretty=True)
 
 
 @app.route("/pinned/notes.atom")
 def getPinnedNotesAtom():
-    return getFeed(request.url).atom_str(pretty=True)
+    return getFeed(request.url, placeholderRequested(request)).atom_str(pretty=True)
 
+def placeholderRequested(request):
+    return "empty" in request.args and request.args["empty"] == "placeholder"
 
-def getFeed(url):
+def getFeed(url, emptyPlaceholder=False):
     fg = FeedGenerator()
     fg.id(url)
     fg.link(href=url, rel='self')
@@ -89,6 +91,11 @@ def getFeed(url):
         fe.id("https://keep.google.com/u/0/#NOTE/"+note.id)
         fe.link(href='https://keep.google.com/u/0/#NOTE/'+note.id, rel='alternate')
         fe.title(format(note))
+    if emptyPlaceholder:
+        fe = fg.add_entry()
+        fe.id("https://keep.google.com")
+        fe.link(href='https://keep.google.com', rel='alternate')
+        fe.title(" ")
     return fg
 
 def getNotes():
