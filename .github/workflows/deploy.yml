@@ -41,8 +41,8 @@ jobs:
       - name: Configure Keep credentials
         run: |
           .github/scripts/dokku.sh config:set --no-restart ${{ env.DOKKU_APP }} \
-            USER="${{ secrets.USER }}" \
-            ENCRYPTED_PASSWORD="${{ secrets.ENCRYPTED_PASSWORD }}" \
+            EMAIL="${{ secrets.EMAIL }}" \
+            MASTER_KEY="${{ secrets.MASTER_KEY }}" \
             SECRET_KEY="${{ secrets.SECRET_KEY }}"
 
       - name: Deploy to Dokku

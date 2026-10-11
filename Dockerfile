@@ -17,7 +17,7 @@ COPY --from=builder /install /usr/local
 WORKDIR /app
 COPY knot.py /app/knot.py
 
-# The app writes master.key in its working directory at runtime
+# Run as a non-root user
 RUN adduser -D -H -u 1000 knot && chown -R knot:knot /app
 USER knot
 
