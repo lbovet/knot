@@ -1,6 +1,5 @@
 import logging
 import gkeepapi
-import json
 from cryptography.fernet import Fernet
 from flask import Flask, Response, request, jsonify
 from feedgen.feed import FeedGenerator
@@ -16,6 +15,13 @@ keep = gkeepapi.Keep()
 logged_in = False
 
 master_token = None
+
+def required_env(name):
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    return value
+
 
 def sync(key):
     global logged_in
@@ -33,32 +39,30 @@ def sync(key):
         except:
             pass
 
-    with open('credentials.json') as json_file:
-        logged_in = False
-        credentials = json.load(json_file)
-        if key is None:
-            key = open("secret.key", "rb").read()
-        else:
-            key = key.encode()
-        password = Fernet(key).decrypt(
-            credentials["password"].encode()).decode()
-        user = credentials["user"]
-        if master_token is None:
-            keep.login(user, password)
-            master_token = Fernet(key).encrypt(keep.getMasterToken().encode())
-            with open("master.key", "wb") as token_file:
-                token_file.write(master_token)
-        else:
+    logged_in = False
+    if key is None:
+        key = required_env("SECRET_KEY").encode()
+    else:
+        key = key.encode()
+    password = Fernet(key).decrypt(
+        required_env("ENCRYPTED_PASSWORD").encode()).decode()
+    user = required_env("USER")
+    if master_token is None:
+        keep.login(user, password)
+        master_token = Fernet(key).encrypt(keep.getMasterToken().encode())
+        with open("master.key", "wb") as token_file:
+            token_file.write(master_token)
+    else:
+        try:
+            keep.resume(user, Fernet(key).decrypt(master_token).decode())
+        except:
             try:
-                keep.resume(user, Fernet(key).decrypt(master_token).decode())
+                # os.remove("master.key")
+                pass
             except:
-                try:
-                    # os.remove("master.key")
-                    pass
-                except:
-                    pass
-                return
-        logged_in = True
+                pass
+            return
+    logged_in = True
 
 
 @app.route("/pinned/notes")
