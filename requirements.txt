@@ -1,0 +1,4 @@
+flask
+gkeepapi
+cryptography
+feedgen
