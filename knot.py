@@ -53,7 +53,8 @@ def sync(key):
                 keep.resume(user, Fernet(key).decrypt(master_token).decode())
             except:
                 try:
-                    os.remove("master.key")
+                    # os.remove("master.key")
+                    pass
                 except:
                     pass
                 return
