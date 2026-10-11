@@ -3,7 +3,6 @@ import gkeepapi
 from cryptography.fernet import Fernet
 from flask import Flask, Response, request, jsonify
 from feedgen.feed import FeedGenerator
-from hashlib import sha256
 import os
 
 app = Flask(__name__)
@@ -14,7 +13,6 @@ log.setLevel(logging.ERROR)
 keep = gkeepapi.Keep()
 logged_in = False
 
-master_token = None
 
 def required_env(name):
     value = os.environ.get(name)
@@ -23,45 +21,21 @@ def required_env(name):
     return value
 
 
-def sync(key):
+def sync():
     global logged_in
     global keep
-    global master_token
     if logged_in:
         try:
             keep.sync()
             return
         except:
             pass
-    if master_token is None:
-        try:
-            master_token = open("master.key", "rb").read()
-        except:
-            pass
-
     logged_in = False
-    if key is None:
-        key = required_env("SECRET_KEY").encode()
-    else:
-        key = key.encode()
-    password = Fernet(key).decrypt(
-        required_env("ENCRYPTED_PASSWORD").encode()).decode()
-    user = required_env("USER")
-    if master_token is None:
-        keep.login(user, password)
-        master_token = Fernet(key).encrypt(keep.getMasterToken().encode())
-        with open("master.key", "wb") as token_file:
-            token_file.write(master_token)
-    else:
-        try:
-            keep.resume(user, Fernet(key).decrypt(master_token).decode())
-        except:
-            try:
-                # os.remove("master.key")
-                pass
-            except:
-                pass
-            return
+    email = required_env("EMAIL")
+    key = required_env("SECRET_KEY").encode()
+    master_token = Fernet(key).decrypt(
+        required_env("MASTER_KEY").encode()).decode()
+    keep.resume(email, master_token)
     logged_in = True
 
 
@@ -104,7 +78,7 @@ def getFeed(url, emptyPlaceholder=False):
     return fg
 
 def getNotes():
-    sync(request.args.get('key'))
+    sync()
     return keep.find(pinned=True)
 
 def format(note):
