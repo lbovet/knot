@@ -38,6 +38,13 @@ jobs:
       - name: Set build CPU limit
         run: .github/scripts/dokku.sh resource:limit ${{ env.DOKKU_APP }} --process-type build --cpu 0.5
 
+      - name: Configure Keep credentials
+        run: |
+          .github/scripts/dokku.sh config:set --no-restart ${{ env.DOKKU_APP }} \
+            USER="${{ secrets.USER }}" \
+            ENCRYPTED_PASSWORD="${{ secrets.ENCRYPTED_PASSWORD }}" \
+            SECRET_KEY="${{ secrets.SECRET_KEY }}"
+
       - name: Deploy to Dokku
         uses: dokku/github-action@v1
         with:
